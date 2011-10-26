@@ -1,0 +1,42 @@
+QN Mexico
+QN Antarctica
+QN Computer Science
+QN Turks and Caicos Islands
+QN Turks and Caicos
+QN Hex Land
+QN Hex Lan
+QN Hex
+QN Western Michigan 
+QN Hex
+QN China            
+QN United 
+QN united states
+QN  United States
+QN Russian Federation
+QN Russian Federation - YES
+QN Russian Federation - OK
+QN Russian Rederatio
+QI 12
+QI 0
+QI 999
+QI 23
+QI 1
+QI 002
+QI 039
+QI 40
+QI 004
+QC MEX
+QC mex
+QC ATA
+QC ZWE
+QC IND
+QC WMU
+QC OMN
+QC INZ
+QC AAA
+QC ZZZ
+QC !!!
+QC |||
+QC usa
+LI
+LC
