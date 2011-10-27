@@ -1,4 +1,3 @@
-
 enum {linemax = 400, maxcountries = 300};
 enum Offsets {null_termin = 1, alignment_offset = 3};
 enum Actions {Query_name, Query_keyid, Query_code, List_keyid, List_code, List_name};
@@ -20,14 +19,19 @@ struct meta{
   unsigned short maxid;
 };
 
+struct query{
+  signed int success;
+  int ncomparisons;
+};
+
 struct Storage{
   void (*backup)(void *self, FILE *f);  /*functions that storage may need.*/
   void (*load)(void *self, FILE *f);
   void (*init)(void *self, void *val, int lim);
   void (*insert)(void *self, void *data);
   void (*destroy)(void *self);
-  int  (*transact)(void *self, void *query_mode, void *target);
-  int  (*t_helper[6])(void *self, void *target);
+  struct query (*transact)(void *self, void *query_mode, void *target);
+  struct query (*t_helper[6])(void *self, void *target);
 };
 
 struct BstNode{
@@ -46,7 +50,7 @@ struct CodeIndex{
 
 struct Record{ 
   unsigned short int id;             //16 bit id.
-  char countrycode[3];      //3 char code.
+  char countrycode[3];      //3 char code. extra byte for terminator.
   char name[17];            //left justified, space-filled.
   char continent[11];       // *                         *
   char region[10];          // *                         *
@@ -72,3 +76,4 @@ extern void initialize_env(CountryStorage *, CodeIndex *, Meta *);
 extern char *parsetransrec(char*);
 extern char *strip(char*);
 extern ActionCode action2enum(char *);
+extern void prettyprint(Record *);

@@ -70,7 +70,7 @@ bstindex_insert(void *self, void *data){
     i = rs->root;
     while (i != -1){
       parent = i;
-      if ((cond = strncmp(r->countrycode, rs->countrycodes[parent]._keyid, 3)) == 0){
+      if ((cond = strncmp(r->countrycode, rs->countrycodes[parent]._keyid, strlen(r->countrycode))) == 0){
 	printf("code already exists in the index.\n");
 	return;
       }

@@ -55,12 +55,11 @@ parsetransrec(char *s){
    *  NOTE: THIS MODIFIES THE ORIGINAL PARAMETER PASSED IN.
   */
     if (*cp == '\0'){
-      fprintf(stderr, "invalid transaction.\n");
-      abort();
+      return s;
     }
   }
   *cp = '\0';
-  *cp++;
+  while (*(++cp) == ' ');
   return cp;
 }
 

@@ -10,7 +10,7 @@
 static void write_record(FILE *, Record *);
 static Record * read_record(FILE *);
 static void convertToUpperCase(char *);
-static void prettyprint(Record *);
+//static void prettyprint(Record *);
 
 static void
 arraystorage_backup(void *self, FILE *f){
@@ -19,10 +19,10 @@ arraystorage_backup(void *self, FILE *f){
   int i;
   CountryStorage *rs = (CountryStorage *) self;
 
-  for (i=0; i < rs->nrecords; i++)
+  for (i=0; i < rs->maxid; i++)
     write_record(f,rs->countries[i]);
 }
-
+/*********************************************************************************/
 static void
 arraystorage_load(void *self, FILE *f){
   if (self == 0)
@@ -30,11 +30,11 @@ arraystorage_load(void *self, FILE *f){
   int i;
   CountryStorage *rs = (CountryStorage *) self;
 
-  for (i = 0; i < rs->maxid; i++){
+  for (i = 0; i <= rs->maxid; i++){
     rs->countries[i] = (Recs) read_record(f);
   }
 }
-
+/*********************************************************************************/
 static void
 arraystorage_init(void *self, void *val, int lim){
   if (self == 0)
@@ -48,7 +48,7 @@ arraystorage_init(void *self, void *val, int lim){
   }
   rs->nrecords = 0;
 }
-
+/*********************************************************************************/
 static void 
 arraystorage_insert(void *self, void *data){
   if (self == 0)
@@ -61,7 +61,7 @@ arraystorage_insert(void *self, void *data){
     rs->maxid = r->id;
   rs->nrecords++;
 }
-
+/*********************************************************************************/
 static void
 arraystorage_destroy(void *self){
   if (self == 0)
@@ -69,30 +69,34 @@ arraystorage_destroy(void *self){
   CountryStorage *rs = (CountryStorage *) self;
   free(rs->countries);
 }
-
-static int 
-arraystorage_query(void *self, void *mode, void *target){
-  int outcome = -1;
+/*********************************************************************************/
+static struct query
+arraystorage_transx(void *self, void *mode, void *target){
+  struct query thisquery = {0,0};
   if (self == 0)
-    return -1;
+    return thisquery;
   CountryStorage *rs = (CountryStorage *) self;
   ActionCode AC  = *((int *) mode);
   if (rs->ops.t_helper[AC])
-    outcome = (rs->ops.t_helper[AC])(rs, target);
-  return outcome;
+    thisquery = (rs->ops.t_helper[AC])(rs, target);
+  return thisquery;
 }
-
-static int
+/*********************************************************************************/
+static struct query
 array_queryname(void *self, void *target){
-  int i,ncompares;
+  int i;
   size_t length;
-  int result = -1;
+  struct query results = {-1,0};
   
-  if (self == 0 || target == 0)
-    return result;
+  if (self == 0 || target == 0){
+    results.success = -1;
+    results.ncomparisons = 0;
+    return results;
+  }
   CountryStorage *rs = (CountryStorage *) self;
   
-  for (ncompares = i = 0; i < rs->maxid; i++){
+  for (i = 1; i <= rs->maxid; i++){
+    results.ncomparisons++;
     if(rs->countries[i] != 0){
       length = sizeof (rs->countries[i]->name);
       int cond,diff;
@@ -107,46 +111,59 @@ array_queryname(void *self, void *target){
       free(current); free(pt);
       if (cond == 0){
 	prettyprint(rs->countries[i]);
-	return ++ncompares;
+	results.success = 1;
+	return results;
       }
     }
-    ncompares++;
   }
-  printf("NAME: %s.\n", (char *) target);
-  return ncompares;
+  printf("ERROR - NO COUNTRY WITH NAME: %s.\n", (char *) target);
+  return results;
 }
-
-static int
+/*********************************************************************************/
+static struct query
 array_queryid(void *self, void *target){
-  int ncompares = 0;
-  int result = -1;
+  struct query results = {-1,0};
   
-  if (self == 0 || target == 0)
-    return result;
+  if (self == 0)
+    return results;
   CountryStorage *rs = (CountryStorage *) self;  
-  int tid = atoi((char *) target);
+  int tid = (int) target;
 
-  if(rs->countries[tid]){
+  if(tid <= rs->maxid && rs->countries[tid]){
     prettyprint(rs->countries[tid]);
-    return ++ncompares;
+    results.ncomparisons++; results.success = 1;
+    return results;
   }
   else{
-    printf("ID: %d.\n", tid);
+    printf("ERROR - NO COUNTRY WITH ID: %d.\n", tid);
+    results.ncomparisons++;
   }
-  return ++ncompares;
+  return results;
 }
-
-static int 
+/*********************************************************************************/
+static struct query
 array_listid(void *self, void *target){
-  return 0;  
-}
 
+
+  int i;
+  struct query results = {1,0};
+  if (self == 0)
+    return results;
+  CountryStorage *rs = (CountryStorage *) self;
+  
+  for(i = 0; i <= rs->maxid; i++){
+    if (rs->countries[i])
+      prettyprint(rs->countries[i]);
+  }
+  return results;  
+}
+/*********************************************************************************/
 Storage array_ops = {&arraystorage_backup,
 		     &arraystorage_load,
 		     &arraystorage_init,
 		     &arraystorage_insert,
 		     &arraystorage_destroy,
-                     &arraystorage_query,
+                     &arraystorage_transx,
 		     {&array_queryname,
 		      &array_queryid,
 		      NULL,
@@ -154,7 +171,7 @@ Storage array_ops = {&arraystorage_backup,
 		      NULL,
 		      NULL}
 };
-
+/*********************************************************************************/
 static void
 write_record(FILE *f, Record * r){
   int i;
@@ -176,7 +193,7 @@ write_record(FILE *f, Record * r){
     fwrite(&(r->gnp), sizeof (r->gnp), 1, f);
   }
 }
-
+/*********************************************************************************/
 static Record *
 read_record(FILE *f){
   Record *r;
@@ -207,17 +224,12 @@ read_record(FILE *f){
   fread(&(r->gnp), sizeof(r->gnp), 1, f);
   return r;
 }
-
+/*********************************************************************************/
 static void
 convertToUpperCase(char *s){
     do {
       *s = toupper((unsigned char) *s);
     } while(*s++ != '\0');
 }
-
-static void
-prettyprint(Record *r){
-  printf("%03d %3s %17s %11s %10s |%0d|%'4d|%d|%f|%d\n", r->id, r->countrycode, r->name, r->continent, r->region, r->yearindep, r->population, r->lifexp, r->gnp);
-  return;
-}
-
+/*********************************************************************************/
+/*********************************************************************************/

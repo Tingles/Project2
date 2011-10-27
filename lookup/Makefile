@@ -11,4 +11,4 @@ header.o : header.c setup.h
 main.o : main.c setup.h
 	cc -g -Wall -c main.c -std=gnu99
 clean : 
-	rm lookup lookup.o crecs.o index.o parsers.o header.o
+	rm lookup main.o crecs.o index.o parsers.o header.o

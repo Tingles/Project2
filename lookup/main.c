@@ -46,26 +46,44 @@ int main(int argc, char * argv[]){
   while(fgets(buff,linemax,input) != 0){
     char *target, *action;
     ActionCode AC;
+    struct query thisquery;
+    
+    printf("%s", buff);
+    
     target = strip(parsetransrec(buff));
     action = buff;
     AC = action2enum(action);
+    
     switch(AC){
     case Query_name:{
-      (ActualDataStorage.ops.transact) (&ActualDataStorage, &AC, target);
       /*sequential search through ActualDataStorage.*/
+      thisquery = (ActualDataStorage.ops.transact) (&ActualDataStorage, &AC, target);
+      printf(">> %d probes.\n", thisquery.ncomparisons);
     }break;
     case Query_keyid:{
       /*
        *Direct address in ActualDataStorage, record is either there or it's not.
        */
-      (ActualDataStorage.ops.transact)(&ActualDataStorage, &AC, target);
+      thisquery = (ActualDataStorage.ops.transact) (&ActualDataStorage, &AC, (void *) atoi(target));
+      printf(">> %d probes.\n", thisquery.ncomparisons);
+
     }break;
     case Query_code:{
       /*
        *BST walk, through CountryIndex., at worst case the # of comparisons is 
        * the height of the tree.
        */
-      (CountryIndex.ops.transact) (&CountryIndex, &AC, target);
+      int drp;
+      struct query extraquery = {-1,0};
+      thisquery = (CountryIndex.ops.transact) (&CountryIndex, &AC, target);
+      if ((drp = thisquery.success) > 0){
+	ActionCode tmp = Query_keyid;
+	extraquery = (ActualDataStorage.ops.transact) (&ActualDataStorage,&tmp,(void *) drp);
+	printf(">> %d + %d probes.\n", thisquery.ncomparisons, extraquery.ncomparisons);
+      }
+      else{
+	printf(">> %d + %d probes.\n",thisquery.ncomparisons, extraquery.ncomparisons);
+      }
     }break;
     case List_name:{
       /*
@@ -85,7 +103,7 @@ int main(int argc, char * argv[]){
        *List all countries by Code. Implementation is an *inorder* traversal of
        *  our BST.
        */
-      (CountryIndex.ops.transact) (&CountryIndex, &AC, target);
+      (CountryIndex.ops.transact) (&CountryIndex, &AC, &CountryIndex.root);
     }break;
     default:break;
     }

@@ -7,4 +7,4 @@ index.o : index.c setup.h
 main.o : main.c setup.h
 	cc -g -c main.c -std=gnu99
 clean : 
-	rm setup setup.o
+	rm setup crecs.o index.o main.o
